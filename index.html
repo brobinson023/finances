@@ -187,6 +187,11 @@ function migrate(s){
   s.accounts=s.accounts||[]; s.bills=s.bills||[]; s.debts=s.debts||[]; s.income=s.income||[];
   s.settings=Object.assign({transferFrom:'Navy Federal', transferTo:'USAA'}, s.settings||{});
   if(!s.settings.collapsed) s.settings.collapsed={accounts:false, bills:false};
+  if(!s.settings.incomeSeeded && !s.income.length){
+    const nid=()=>'inc'+Math.random().toString(36).slice(2,8);
+    s.income=[{id:nid(),name:'Mid-month pay',amount:4304.85,period:1},{id:nid(),name:'End-of-month pay',amount:4369.36,period:2}];
+    s.settings.incomeSeeded=true;
+  }
   s.bills.forEach(b=>{ if(b.payPeriod!==1 && b.payPeriod!==2){ const day=b.due?new Date(b.due+'T00:00:00').getDate():1; b.payPeriod = day<15?1:2; } });
   return s;
 }
@@ -560,7 +565,7 @@ function exportPaydayICS(){
 function loadSample(){
   S=migrate({
     accounts:[{id:uid(),name:'Navy Federal Active Duty Checking',balance:1240},{id:uid(),name:'USAA Classic Checking',balance:380}],
-    income:[{id:uid(),name:'Mid-month pay',amount:2150,period:1},{id:uid(),name:'End-month pay',amount:2150,period:2}],
+    income:[{id:uid(),name:'Mid-month pay',amount:4304.85,period:1},{id:uid(),name:'End-of-month pay',amount:4369.36,period:2}],
     bills:[
       {id:uid(),name:'Rent',amount:1450,due:'2026-07-01',category:'Housing',payPeriod:2,recurring:true,paid:false},
       {id:uid(),name:'Car insurance',amount:142,due:'2026-06-05',category:'Insurance',payPeriod:1,recurring:true,paid:false},
