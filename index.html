@@ -15,11 +15,14 @@
     --red:#f2545b; --accent:#5b9dff; --purple:#a78bfa; --radius:16px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
   html,body{margin:0; padding:0; background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     font-size:16px; -webkit-font-smoothing:antialiased}
-  .wrap{max-width:560px; margin:0 auto; padding:max(16px,env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom))}
-  h1{font-size:1.35rem; font-weight:650; margin:4px 0 2px; letter-spacing:-.01em}
+  .wrap{max-width:560px; margin:0 auto; padding:max(16px,env(safe-area-inset-top)) 16px calc(86px + env(safe-area-inset-bottom))}
+  .screen{animation:fade .22s ease}
+  @keyframes fade{from{opacity:.35; transform:translateY(4px)}to{opacity:1; transform:none}}
+  h1{font-size:1.45rem; font-weight:700; margin:6px 0 2px; letter-spacing:-.015em}
   h2{font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0}
   h2.clp{cursor:pointer; user-select:none}
   .sub{color:var(--muted); font-size:.85rem; margin:0 0 18px}
@@ -55,6 +58,9 @@
   .transfer .th{font-size:.72rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--green); margin-bottom:6px}
   .transfer .tb{font-size:.95rem; line-height:1.45}
   .transfer .tb b{font-weight:700}
+  .bnote{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:.83rem; color:var(--muted)}
+  .bnote.stale{border-color:#3a3320; background:rgba(240,180,41,.06); color:var(--text)}
+  .bnote button{background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:9px; padding:7px 12px; font-size:.78rem; font-weight:600; cursor:pointer; white-space:nowrap; flex:none}
   .pcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:12px}
   .pcard .ph{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
   .pcard .pt{font-weight:650; font-size:1rem}
@@ -91,12 +97,18 @@
   .spend .cval{width:74px; text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; flex:none}
   .empty{color:var(--muted); font-size:.88rem; text-align:center; padding:22px 10px; border:1px dashed var(--border); border-radius:14px}
   .empty a{color:var(--accent); cursor:pointer; text-decoration:none}
-  .tools{display:flex; gap:8px; margin-top:34px; flex-wrap:wrap; justify-content:center}
-  .tools button{background:none; border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:7px 12px; font-size:.76rem; cursor:pointer}
-  .bnote{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:.83rem; color:var(--muted)}
-  .bnote.stale{border-color:#3a3320; background:rgba(240,180,41,.06); color:var(--text)}
-  .bnote button{background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:9px; padding:7px 12px; font-size:.78rem; font-weight:600; cursor:pointer; white-space:nowrap; flex:none}
+  .tools{display:flex; gap:8px; margin-top:18px; flex-wrap:wrap}
+  .tools button{background:none; border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:9px 13px; font-size:.8rem; cursor:pointer}
   .note{font-size:.74rem; color:var(--amber); text-align:center; margin-top:16px; display:none}
+  /* bottom tab bar */
+  .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; justify-content:center;
+    background:rgba(13,15,18,.9); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-top:1px solid var(--border);
+    padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar .inner{display:flex; width:100%; max-width:560px}
+  .tabbar button{flex:1; background:none; border:none; color:var(--muted); padding:9px 0 7px;
+    display:flex; flex-direction:column; align-items:center; gap:3px; font-size:.62rem; font-weight:600; cursor:pointer; letter-spacing:.02em}
+  .tabbar button.active{color:var(--green)}
+  .tabbar svg{width:23px; height:23px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
   .ov{position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(3px); display:none; align-items:flex-end; justify-content:center; z-index:50}
   .ov.show{display:flex}
   .modal{background:var(--surface); border:1px solid var(--border); border-radius:20px 20px 0 0;
@@ -120,55 +132,72 @@
 </style>
 
 <div class="wrap">
-  <h1>Cash Flow</h1>
-  <p class="sub" id="today"></p>
+  <!-- OVERVIEW -->
+  <section class="screen" id="screen-overview">
+    <h1>Cash Flow</h1>
+    <p class="sub" id="today"></p>
+    <div class="summary">
+      <div class="sumcard"><div class="lbl">In</div><div class="val pos" id="sumIn">$0</div></div>
+      <div class="sumcard"><div class="lbl">Out</div><div class="val neg" id="sumOut">$0</div></div>
+      <div class="sumcard"><div class="lbl">Leftover</div><div class="val" id="sumLeft">$0</div></div>
+    </div>
+    <div id="alertWrap"></div>
+    <div id="backupWrap"></div>
+    <div class="shead"><h2>Pay Periods</h2></div>
+    <p class="cap">Paydays follow your NFCU 2026 Active Duty calendar (early direct deposit).</p>
+    <div id="periods"></div>
+    <p class="note" id="note">Preview mode — changes won't be saved here. On your hosted site, data saves automatically.</p>
+  </section>
 
-  <div class="summary">
-    <div class="sumcard"><div class="lbl">In</div><div class="val pos" id="sumIn">$0</div></div>
-    <div class="sumcard"><div class="lbl">Out</div><div class="val neg" id="sumOut">$0</div></div>
-    <div class="sumcard"><div class="lbl">Leftover</div><div class="val" id="sumLeft">$0</div></div>
-  </div>
+  <!-- BILLS -->
+  <section class="screen" id="screen-bills" hidden>
+    <h1>Bills</h1>
+    <p class="sub">Grouped by the paycheck that covers them</p>
+    <div class="shead"><h2 id="billHead" class="clp" onclick="toggleCollapse('bills')">Bills</h2><button class="add" onclick="openModal('bill')">+ Add</button></div>
+    <div id="bills"></div>
+    <div class="shead"><h2>Monthly Spending</h2></div>
+    <div id="spend" class="spend"></div>
+  </section>
 
-  <div id="alertWrap"></div>
-  <div id="backupWrap"></div>
+  <!-- CALENDAR -->
+  <section class="screen" id="screen-calendar" hidden>
+    <h1>Calendar</h1>
+    <div class="shead"><h2 id="calTitle">This Month</h2>
+      <div class="calnav"><button onclick="calStep(-1)">‹</button><button onclick="calToday()">Today</button><button onclick="calStep(1)">›</button></div>
+    </div>
+    <div id="calendar"></div>
+    <div id="calDetail"></div>
+  </section>
 
-  <div class="shead"><h2>Pay Periods</h2></div>
-  <p class="cap">Paydays follow your NFCU 2026 Active Duty calendar (early direct deposit).</p>
-  <div id="periods"></div>
-
-  <div class="shead"><h2>Income</h2><button class="add" onclick="openModal('income')">+ Add</button></div>
-  <div id="income"></div>
-
-  <div class="shead"><h2 id="accHead" class="clp" onclick="toggleCollapse('accounts')">Accounts</h2><button class="add" onclick="openModal('account')">+ Add</button></div>
-  <div id="accounts"></div>
-
-  <div class="shead"><h2 id="billHead" class="clp" onclick="toggleCollapse('bills')">Bills</h2><button class="add" onclick="openModal('bill')">+ Add</button></div>
-  <div id="bills"></div>
-
-  <div class="shead"><h2 id="calTitle">This Month</h2>
-    <div class="calnav"><button onclick="calStep(-1)">‹</button><button onclick="calToday()">Today</button><button onclick="calStep(1)">›</button></div>
-  </div>
-  <div id="calendar"></div>
-  <div id="calDetail"></div>
-
-  <div class="shead"><h2>Monthly Spending</h2></div>
-  <div id="spend" class="spend"></div>
-
-  <div class="tools">
-    <button onclick="openSettings()">Settings</button>
-    <button onclick="exportData()">Export</button>
-    <button onclick="openImport()">Import</button>
-    <button onclick="loadSample()">Load example</button>
-    <button onclick="wipe()">Clear all</button>
-  </div>
-  <p class="note" id="note">Preview mode — changes won't be saved here. On your hosted site, data saves automatically.</p>
+  <!-- MORE -->
+  <section class="screen" id="screen-more" hidden>
+    <h1>More</h1>
+    <div class="shead"><h2>Income</h2><button class="add" onclick="openModal('income')">+ Add</button></div>
+    <div id="income"></div>
+    <div class="shead"><h2 id="accHead" class="clp" onclick="toggleCollapse('accounts')">Accounts</h2><button class="add" onclick="openModal('account')">+ Add</button></div>
+    <div id="accounts"></div>
+    <div class="shead"><h2>Tools</h2></div>
+    <div class="tools">
+      <button onclick="openSettings()">Settings</button>
+      <button onclick="exportData()">Export</button>
+      <button onclick="openImport()">Import</button>
+      <button onclick="loadSample()">Load example</button>
+      <button onclick="wipe()">Clear all</button>
+    </div>
+  </section>
 </div>
+
+<nav class="tabbar"><div class="inner">
+  <button data-tab="overview" class="active" onclick="showTab('overview')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Overview</button>
+  <button data-tab="bills" onclick="showTab('bills')"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-1.8L12 21l-3-1.8L6 21z"/><line x1="9.5" y1="8" x2="14.5" y2="8"/><line x1="9.5" y1="12" x2="14.5" y2="12"/></svg>Bills</button>
+  <button data-tab="calendar" onclick="showTab('calendar')"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><line x1="3" y1="9.5" x2="21" y2="9.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="16" y1="2.5" x2="16" y2="6.5"/></svg>Calendar</button>
+  <button data-tab="more" onclick="showTab('more')"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>More</button>
+</div></nav>
 
 <div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 
 <script>
 /* ---------- NFCU 2026 Active Duty paydays (Early DDNP funds-available dates) ---------- */
-/* period 1 = mid-month (Active Net Pay) · period 2 = end-month (Active/Retired Net Pay) */
 const PAYDAYS=[
   {d:'2026-01-14',p:1},{d:'2026-01-29',p:2},{d:'2026-02-12',p:1},{d:'2026-02-26',p:2},
   {d:'2026-03-12',p:1},{d:'2026-03-31',p:2},{d:'2026-04-14',p:1},{d:'2026-04-30',p:2},
@@ -211,7 +240,16 @@ function emptyMsg(t,type){return `<div class="empty">${t} <a onclick="openModal(
 function lastDayOf(y,m){return new Date(y,m+1,0).getDate();}
 function listFor(type){return type==='income'?S.income:S[type+'s'];}
 
-/* ---------- payday schedule logic ---------- */
+/* ---------- tab navigation ---------- */
+let activeTab='overview';
+function showTab(name){
+  activeTab=name;
+  ['overview','bills','calendar','more'].forEach(n=>{ $('screen-'+n).hidden=(n!==name); });
+  document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  window.scrollTo(0,0);
+}
+
+/* ---------- payday schedule ---------- */
 function pdDate(x){return new Date(x.d+'T00:00:00');}
 function nextPaydayDate(p){ const t=todayMid();
   const f=PAYDAYS.filter(x=>x.p===p && pdDate(x)>=t).sort((a,b)=>pdDate(a)-pdDate(b))[0];
@@ -221,7 +259,6 @@ function paysForMonth(year,month){ const set={};
   PAYDAYS.forEach(x=>{ const d=pdDate(x); if(d.getFullYear()===year&&d.getMonth()===month) set[d.getDate()]={p:x.p}; });
   return set; }
 
-/* pay-period math */
 function periodBills(p){
   const now=new Date(), cy=now.getFullYear(), cm=now.getMonth();
   return S.bills.filter(b=>{
@@ -256,6 +293,14 @@ function renderBanner(){
     return `<div class="th">${x.du===0?'Payday today':'Payday tomorrow'}</div>
       <div class="tb">Transfer <b>${money2(amt)}</b> from ${esc(S.settings.transferFrom)} to ${esc(S.settings.transferTo)} to cover ${x.p===1?'first':'second'} pay period bills.</div>`;
   }).join('<div style="height:12px"></div>')+'</div>';
+}
+
+function renderBackupNote(){
+  const lb=S.settings.lastBackup; let txt, stale;
+  if(!lb){ txt='Not backed up yet'; stale=true; }
+  else { const d=new Date(lb); const days=Math.round((todayMid()-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
+    if(days<=0){ txt='Backed up today'; stale=false; } else { txt='Last backup '+days+(days===1?' day':' days')+' ago'; stale=true; } }
+  $('backupWrap').innerHTML=`<div class="bnote ${stale?'stale':''}"><span>💾 ${txt}</span><button onclick="backupToObsidian()">Back up to Obsidian</button></div>`;
 }
 
 function renderPeriods(){
@@ -429,7 +474,7 @@ function openModal(type,id){
     f=`<div class="field"><label>Account name</label><input id="f_name" value="${item?esc(item.name):''}" placeholder="Navy Federal, USAA…"></div>
        <div class="field"><label>Current balance ($)</label><input id="f_balance" type="number" inputmode="decimal" value="${item?item.balance:''}" placeholder="0"></div>`;
   } else if(type==='income'){
-    f=`<div class="field"><label>Income source</label><input id="f_name" value="${item?esc(item.name):''}" placeholder="Mid-month pay, End-month pay…"></div>
+    f=`<div class="field"><label>Income source</label><input id="f_name" value="${item?esc(item.name):''}" placeholder="Mid-month pay…"></div>
        <div class="field"><label>Amount per paycheck ($)</label><input id="f_amount" type="number" inputmode="decimal" value="${item?item.amount:''}" placeholder="0"></div>
        <div class="field"><label>Pay period</label><select id="f_period">
          <option value="1" ${item&&(+item.period)===1?'selected':''}>First (mid-month)</option>
@@ -495,14 +540,6 @@ function copyText(btn){ const t=$('f_export'); if(!t)return; t.focus(); t.select
   const done=()=>{const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1500);};
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t.value).then(done).catch(()=>{try{document.execCommand('copy');done();}catch(e){}}); } else { try{document.execCommand('copy'); done();}catch(e){} } }
 function exportData(){ showTextModal('Export / backup', JSON.stringify(S,null,2), 'cashflow-backup.json', 'application/json'); }
-function renderBackupNote(){
-  const lb=S.settings.lastBackup; let txt, stale;
-  if(!lb){ txt='Not backed up yet'; stale=true; }
-  else { const d=new Date(lb); const days=Math.round((todayMid()-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
-    if(days<=0){ txt='Backed up today'; stale=false; } else { txt='Last backup '+days+(days===1?' day':' days')+' ago'; stale=true; } }
-  $('backupWrap').innerHTML=`<div class="bnote ${stale?'stale':''}"><span>💾 ${txt}</span><button onclick="backupToObsidian()">Back up to Obsidian</button></div>`;
-}
-function markBackup(){ S.settings.lastBackup=new Date().toISOString(); save(); renderBackupNote(); }
 function backupMarkdown(){
   const json=JSON.stringify(S,null,2);
   const stamp=new Date().toLocaleString();
@@ -519,6 +556,7 @@ async function backupToObsidian(){
   }catch(e){ if(e && e.name==='AbortError') return; }
   showTextModal('Back up data (Save to Files → your vault)', md, fname, 'text/markdown');
 }
+function markBackup(){ S.settings.lastBackup=new Date().toISOString(); save(); renderBackupNote(); }
 function openImport(){
   editing={type:'import'};
   $('modal').innerHTML=`<h3>Import data</h3>
@@ -538,7 +576,7 @@ function doImport(){
 function normalize(o){if(!o.id)o.id=uid(); return o;}
 function wipe(){ if(confirm('Clear all data? This cannot be undone.')){S=migrate(blank()); render();} }
 
-/* ---------- payday calendar reminders (.ics) from the NFCU schedule ---------- */
+/* ---------- payday calendar reminders (.ics) ---------- */
 function pad(n){return String(n).padStart(2,'0');}
 function icsLocal(d,h,m){ return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(h)+pad(m)+'00'; }
 function buildPaydayICS(){
@@ -589,4 +627,5 @@ function loadSample(){
 })();
 
 render();
+showTab('overview');
 </script>
