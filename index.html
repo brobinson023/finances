@@ -1,0 +1,587 @@
+<!-- Monthly Cash Flow - single-file web app -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cash Flow">
+<title>Cash Flow</title>
+<link id="appleIcon" rel="apple-touch-icon" href="">
+<style>
+  :root{
+    --bg:#0d0f12; --surface:#15181d; --surface2:#1c2026; --border:#282d35;
+    --text:#e6e8eb; --muted:#868d98; --green:#34d399; --amber:#f0b429;
+    --red:#f2545b; --accent:#5b9dff; --purple:#a78bfa; --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:16px; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:560px; margin:0 auto; padding:max(16px,env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom))}
+  h1{font-size:1.35rem; font-weight:650; margin:4px 0 2px; letter-spacing:-.01em}
+  h2{font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0}
+  h2.clp{cursor:pointer; user-select:none}
+  .sub{color:var(--muted); font-size:.85rem; margin:0 0 18px}
+  .cap{color:var(--muted); font-size:.76rem; margin:-4px 0 12px}
+  .num{font-variant-numeric:tabular-nums}
+  .pos{color:var(--green)} .neg{color:var(--red)}
+  .summary{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin:14px 0 20px}
+  .sumcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 12px}
+  .sumcard .lbl{color:var(--muted); font-size:.7rem; text-transform:uppercase; letter-spacing:.06em}
+  .sumcard .val{font-size:1.15rem; font-weight:650; margin-top:6px; font-variant-numeric:tabular-nums}
+  .shead{display:flex; align-items:center; justify-content:space-between; margin:26px 0 12px}
+  .add{background:var(--surface2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:7px 12px; font-size:.8rem; font-weight:600; cursor:pointer}
+  .add:active{background:#262b33}
+  .row{background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:14px; margin-bottom:10px; display:flex; align-items:center; gap:12px}
+  .row .grow{flex:1; min-width:0}
+  .row .name{font-weight:600; font-size:.97rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .row .meta{color:var(--muted); font-size:.8rem; margin-top:3px}
+  .row .amt{font-weight:650; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+  .reorder{display:flex; flex-direction:column; gap:1px; flex:none; margin:-4px 0}
+  .reorder button{background:none; border:none; color:var(--muted); font-size:.72rem; line-height:1; cursor:pointer; padding:3px}
+  .pill{font-size:.68rem; font-weight:700; padding:3px 8px; border-radius:99px; letter-spacing:.02em}
+  .pill.red{background:rgba(242,84,91,.15); color:var(--red)}
+  .pill.amber{background:rgba(240,180,41,.15); color:var(--amber)}
+  .pill.green{background:rgba(52,211,153,.15); color:var(--green)}
+  .pill.mut{background:var(--surface2); color:var(--muted)}
+  .check{width:26px; height:26px; border-radius:50%; border:1.6px solid var(--border);
+    background:none; cursor:pointer; flex:none; display:grid; place-items:center; color:transparent; font-size:.8rem}
+  .check.done{background:var(--green); border-color:var(--green); color:#0d0f12}
+  .transfer{background:linear-gradient(180deg,rgba(52,211,153,.13),rgba(91,157,255,.06));
+    border:1px solid var(--border); border-radius:var(--radius); padding:15px 16px; margin-bottom:14px}
+  .transfer .th{font-size:.72rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--green); margin-bottom:6px}
+  .transfer .tb{font-size:.95rem; line-height:1.45}
+  .transfer .tb b{font-weight:700}
+  .pcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:12px}
+  .pcard .ph{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+  .pcard .pt{font-weight:650; font-size:1rem}
+  .pcard .pd{color:var(--muted); font-size:.78rem; text-align:right; white-space:nowrap}
+  .pcard .pflow{display:flex; gap:12px; margin:13px 0; font-variant-numeric:tabular-nums}
+  .pcard .pflow > div{flex:1}
+  .pcard .pflow .k{font-size:.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+  .pcard .pflow .vv{font-size:1.05rem; font-weight:650; margin-top:3px}
+  .pcard .xfer{background:var(--surface2); border-radius:10px; padding:10px 12px; font-size:.84rem; color:var(--muted)}
+  .pcard .xfer b{color:var(--green); font-weight:700}
+  .grouphead{display:flex; justify-content:space-between; align-items:center; margin:16px 2px 8px;
+    font-size:.72rem; font-weight:700; letter-spacing:.05em; color:var(--muted); text-transform:uppercase}
+  .grouphead .num{color:var(--text)}
+  .calnav{display:flex; gap:6px}
+  .calnav button{background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:5px 11px; font-size:.85rem; cursor:pointer; line-height:1}
+  .calwrap{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 12px}
+  .cgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px}
+  .cdow{text-align:center; font-size:.62rem; color:var(--muted); font-weight:700; padding-bottom:6px}
+  .cell{aspect-ratio:1/1; border-radius:9px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:.82rem; cursor:pointer}
+  .cell.empty{cursor:default}
+  .cell .dn{font-variant-numeric:tabular-nums; color:var(--text); width:24px; height:24px; display:grid; place-items:center}
+  .cell.today .dn{background:var(--green); color:#0d0f12; border-radius:50%; font-weight:700}
+  .cell.payday .dn{box-shadow:0 0 0 1.5px var(--purple) inset; border-radius:50%}
+  .cell.sel{background:var(--surface2)}
+  .cdot{width:5px; height:5px; border-radius:50%; background:var(--accent)}
+  .cdot.red{background:var(--red)} .cdot.amber{background:var(--amber)} .cdot.green{background:var(--green)}
+  .cleg{display:flex; gap:14px; justify-content:center; margin-top:10px; font-size:.7rem; color:var(--muted)}
+  .cleg span{display:inline-flex; align-items:center; gap:5px}
+  .cleg i{width:8px; height:8px; border-radius:50%; display:inline-block}
+  .spend .crow{display:flex; align-items:center; gap:10px; margin-bottom:11px; font-size:.85rem}
+  .spend .clabel{width:96px; flex:none; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .spend .ctrack{flex:1; height:10px; background:var(--surface2); border-radius:99px; overflow:hidden}
+  .spend .ctrack > span{display:block; height:100%; background:var(--accent); border-radius:99px}
+  .spend .cval{width:74px; text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; flex:none}
+  .empty{color:var(--muted); font-size:.88rem; text-align:center; padding:22px 10px; border:1px dashed var(--border); border-radius:14px}
+  .empty a{color:var(--accent); cursor:pointer; text-decoration:none}
+  .tools{display:flex; gap:8px; margin-top:34px; flex-wrap:wrap; justify-content:center}
+  .tools button{background:none; border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:7px 12px; font-size:.76rem; cursor:pointer}
+  .bnote{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:.83rem; color:var(--muted)}
+  .bnote.stale{border-color:#3a3320; background:rgba(240,180,41,.06); color:var(--text)}
+  .bnote button{background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:9px; padding:7px 12px; font-size:.78rem; font-weight:600; cursor:pointer; white-space:nowrap; flex:none}
+  .note{font-size:.74rem; color:var(--amber); text-align:center; margin-top:16px; display:none}
+  .ov{position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(3px); display:none; align-items:flex-end; justify-content:center; z-index:50}
+  .ov.show{display:flex}
+  .modal{background:var(--surface); border:1px solid var(--border); border-radius:20px 20px 0 0;
+    width:100%; max-width:560px; padding:20px 18px calc(20px + env(safe-area-inset-bottom)); animation:up .22s ease; max-height:92vh; overflow-y:auto}
+  @media(min-width:600px){.ov{align-items:center} .modal{border-radius:20px}}
+  @keyframes up{from{transform:translateY(30px); opacity:.5}to{transform:none; opacity:1}}
+  .modal h3{margin:0 0 16px; font-size:1.05rem}
+  .field{margin-bottom:13px}
+  .field label{display:block; font-size:.76rem; color:var(--muted); margin-bottom:6px}
+  .field input,.field select{width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:11px 12px; font-size:1rem; font-family:inherit}
+  .field input:focus,.field select:focus{outline:none; border-color:var(--accent)}
+  .mrow{display:flex; gap:10px} .mrow .field{flex:1}
+  .chk{display:flex; align-items:center; gap:9px; font-size:.9rem; color:var(--text); cursor:pointer}
+  .chk input{width:auto}
+  .mbtns{display:flex; gap:10px; margin-top:18px}
+  .btn{flex:1; border:none; border-radius:11px; padding:13px; font-size:.95rem; font-weight:650; cursor:pointer}
+  .btn.primary{background:var(--green); color:#0d0f12}
+  .btn.ghost{background:var(--surface2); color:var(--text); border:1px solid var(--border)}
+  .btn.del{background:rgba(242,84,91,.12); color:var(--red); flex:0 0 auto; padding:13px 16px}
+  textarea{width:100%; min-height:130px; background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:11px; font-family:ui-monospace,Menlo,monospace; font-size:.8rem}
+</style>
+
+<div class="wrap">
+  <h1>Cash Flow</h1>
+  <p class="sub" id="today"></p>
+
+  <div class="summary">
+    <div class="sumcard"><div class="lbl">In</div><div class="val pos" id="sumIn">$0</div></div>
+    <div class="sumcard"><div class="lbl">Out</div><div class="val neg" id="sumOut">$0</div></div>
+    <div class="sumcard"><div class="lbl">Leftover</div><div class="val" id="sumLeft">$0</div></div>
+  </div>
+
+  <div id="alertWrap"></div>
+  <div id="backupWrap"></div>
+
+  <div class="shead"><h2>Pay Periods</h2></div>
+  <p class="cap">Paydays follow your NFCU 2026 Active Duty calendar (early direct deposit).</p>
+  <div id="periods"></div>
+
+  <div class="shead"><h2>Income</h2><button class="add" onclick="openModal('income')">+ Add</button></div>
+  <div id="income"></div>
+
+  <div class="shead"><h2 id="accHead" class="clp" onclick="toggleCollapse('accounts')">Accounts</h2><button class="add" onclick="openModal('account')">+ Add</button></div>
+  <div id="accounts"></div>
+
+  <div class="shead"><h2 id="billHead" class="clp" onclick="toggleCollapse('bills')">Bills</h2><button class="add" onclick="openModal('bill')">+ Add</button></div>
+  <div id="bills"></div>
+
+  <div class="shead"><h2 id="calTitle">This Month</h2>
+    <div class="calnav"><button onclick="calStep(-1)">‹</button><button onclick="calToday()">Today</button><button onclick="calStep(1)">›</button></div>
+  </div>
+  <div id="calendar"></div>
+  <div id="calDetail"></div>
+
+  <div class="shead"><h2>Monthly Spending</h2></div>
+  <div id="spend" class="spend"></div>
+
+  <div class="tools">
+    <button onclick="openSettings()">Settings</button>
+    <button onclick="exportData()">Export</button>
+    <button onclick="openImport()">Import</button>
+    <button onclick="loadSample()">Load example</button>
+    <button onclick="wipe()">Clear all</button>
+  </div>
+  <p class="note" id="note">Preview mode — changes won't be saved here. On your hosted site, data saves automatically.</p>
+</div>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+
+<script>
+/* ---------- NFCU 2026 Active Duty paydays (Early DDNP funds-available dates) ---------- */
+/* period 1 = mid-month (Active Net Pay) · period 2 = end-month (Active/Retired Net Pay) */
+const PAYDAYS=[
+  {d:'2026-01-14',p:1},{d:'2026-01-29',p:2},{d:'2026-02-12',p:1},{d:'2026-02-26',p:2},
+  {d:'2026-03-12',p:1},{d:'2026-03-31',p:2},{d:'2026-04-14',p:1},{d:'2026-04-30',p:2},
+  {d:'2026-05-14',p:1},{d:'2026-05-29',p:2},{d:'2026-06-12',p:1},{d:'2026-06-30',p:2},
+  {d:'2026-07-14',p:1},{d:'2026-07-30',p:2},{d:'2026-08-13',p:1},{d:'2026-08-29',p:2},
+  {d:'2026-09-12',p:1},{d:'2026-09-30',p:2},{d:'2026-10-14',p:1},{d:'2026-10-29',p:2},
+  {d:'2026-11-11',p:1},{d:'2026-11-28',p:2},{d:'2026-12-12',p:1},{d:'2026-12-29',p:2}
+];
+
+/* ---------- storage ---------- */
+const KEY='finance_dashboard_v1'; let mem=null, ok=true;
+function rawLoad(){ try{const r=localStorage.getItem(KEY); return r?JSON.parse(r):blank();}catch(e){ok=false; return mem||blank();} }
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){ok=false; mem=S;} if(!ok)document.getElementById('note').style.display='block'; }
+function blank(){return {accounts:[],bills:[],debts:[],income:[],settings:{}};}
+function migrate(s){
+  s.accounts=s.accounts||[]; s.bills=s.bills||[]; s.debts=s.debts||[]; s.income=s.income||[];
+  s.settings=Object.assign({transferFrom:'Navy Federal', transferTo:'USAA'}, s.settings||{});
+  if(!s.settings.collapsed) s.settings.collapsed={accounts:false, bills:false};
+  s.bills.forEach(b=>{ if(b.payPeriod!==1 && b.payPeriod!==2){ const day=b.due?new Date(b.due+'T00:00:00').getDate():1; b.payPeriod = day<15?1:2; } });
+  return s;
+}
+let S=migrate(rawLoad());
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const uid=()=>Math.random().toString(36).slice(2,9);
+const money=n=>{const v=Math.round(n); return (v<0?'-$':'$')+Math.abs(v).toLocaleString();}
+const money2=n=>(n<0?'-$':'$')+Math.abs(Math.round(n)).toLocaleString();
+function todayMid(){const d=new Date(); d.setHours(0,0,0,0); return d;}
+function daysUntil(iso){const d=new Date(iso+'T00:00:00'); return Math.round((d-todayMid())/864e5);}
+function fmtDate(iso){const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});}
+function dueLabel(n){ if(n<0)return n===-1?'1 day overdue':(-n)+' days overdue'; if(n===0)return'Due today'; if(n===1)return'Due tomorrow'; return'Due in '+n+' days';}
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function emptyMsg(t,type){return `<div class="empty">${t} <a onclick="openModal('${type}')">Add one</a></div>`;}
+function lastDayOf(y,m){return new Date(y,m+1,0).getDate();}
+function listFor(type){return type==='income'?S.income:S[type+'s'];}
+
+/* ---------- payday schedule logic ---------- */
+function pdDate(x){return new Date(x.d+'T00:00:00');}
+function nextPaydayDate(p){ const t=todayMid();
+  const f=PAYDAYS.filter(x=>x.p===p && pdDate(x)>=t).sort((a,b)=>pdDate(a)-pdDate(b))[0];
+  return f?pdDate(f):null; }
+function upcomingPaydays(){ const t=todayMid(); return PAYDAYS.filter(x=>pdDate(x)>=t).sort((a,b)=>pdDate(a)-pdDate(b)); }
+function paysForMonth(year,month){ const set={};
+  PAYDAYS.forEach(x=>{ const d=pdDate(x); if(d.getFullYear()===year&&d.getMonth()===month) set[d.getDate()]={p:x.p}; });
+  return set; }
+
+/* pay-period math */
+function periodBills(p){
+  const now=new Date(), cy=now.getFullYear(), cm=now.getMonth();
+  return S.bills.filter(b=>{
+    if(b.payPeriod!==p) return false;
+    if(b.recurring) return true;
+    if(!b.due) return false;
+    const d=new Date(b.due+'T00:00:00'); return d.getFullYear()===cy && d.getMonth()===cm;
+  });
+}
+function periodOut(p){ return periodBills(p).reduce((s,b)=>s+(+b.amount||0),0); }
+function periodIn(p){ return S.income.filter(i=>+i.period===p).reduce((s,i)=>s+(+i.amount||0),0); }
+
+/* ---------- render ---------- */
+function render(){
+  $('today').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  const inM=S.income.reduce((s,i)=>s+(+i.amount||0),0);
+  const outM=periodOut(1)+periodOut(2);
+  const left=inM-outM;
+  $('sumIn').textContent=money(inM);
+  $('sumOut').textContent=money(outM);
+  const l=$('sumLeft'); l.textContent=money(left); l.className='val num '+(left>=0?'pos':'neg');
+  renderBanner(); renderBackupNote(); renderPeriods(); renderIncome(); renderAccounts(); renderBills(); renderCalendar(); renderSpending();
+  save();
+}
+
+function renderBanner(){
+  const t=todayMid();
+  const soon=PAYDAYS.map(x=>({...x,du:Math.round((pdDate(x)-t)/864e5)})).filter(x=>x.du>=0&&x.du<=1);
+  if(!soon.length){ $('alertWrap').innerHTML=''; return; }
+  $('alertWrap').innerHTML='<div class="transfer">'+soon.map(x=>{
+    const amt=periodOut(x.p);
+    return `<div class="th">${x.du===0?'Payday today':'Payday tomorrow'}</div>
+      <div class="tb">Transfer <b>${money2(amt)}</b> from ${esc(S.settings.transferFrom)} to ${esc(S.settings.transferTo)} to cover ${x.p===1?'first':'second'} pay period bills.</div>`;
+  }).join('<div style="height:12px"></div>')+'</div>';
+}
+
+function renderPeriods(){
+  let h='';
+  [1,2].forEach(p=>{
+    const pin=periodIn(p), pout=periodOut(p), lft=pin-pout;
+    const next=nextPaydayDate(p);
+    let pd='No more 2026 paydays';
+    if(next){ const du=Math.round((next-todayMid())/864e5);
+      pd='Payday '+next.toLocaleDateString(undefined,{month:'short',day:'numeric'})+(du===0?' · today':du===1?' · tomorrow':' · in '+du+'d'); }
+    h+=`<div class="pcard">
+      <div class="ph"><span class="pt">${p===1?'First':'Second'} Pay Period</span><span class="pd">${pd}</span></div>
+      <div class="pflow">
+        <div><div class="k">In</div><div class="vv pos">${money2(pin)}</div></div>
+        <div><div class="k">Out</div><div class="vv">${money2(pout)}</div></div>
+        <div><div class="k">Leftover</div><div class="vv ${lft>=0?'pos':'neg'}">${money2(lft)}</div></div>
+      </div>
+      <div class="xfer">Transfer <b>${money2(pout)}</b> from ${esc(S.settings.transferFrom)} → ${esc(S.settings.transferTo)}</div>
+    </div>`;
+  });
+  h+=`<button class="add" style="width:100%;padding:12px;margin-top:2px" onclick="exportPaydayICS()">📅 Add payday reminders to my calendar</button>`;
+  $('periods').innerHTML=h;
+}
+
+function renderIncome(){
+  $('income').innerHTML = S.income.length ? S.income.map(i=>{
+    const nd=nextPaydayDate(+i.period);
+    return `<div class="row" onclick="openModal('income','${i.id}')">
+      <div class="grow"><div class="name">${esc(i.name)}</div><div class="meta">${(+i.period)===1?'First':'Second'} period · next pay ${nd?nd.toLocaleDateString(undefined,{month:'short',day:'numeric'}):'—'}</div></div>
+      <div class="amt pos">${money2(+i.amount)}</div></div>`;
+  }).join('') : emptyMsg('No income yet.','income');
+}
+
+function renderAccounts(){
+  const col=S.settings.collapsed.accounts;
+  const total=S.accounts.reduce((s,a)=>s+(+a.balance||0),0);
+  $('accHead').innerHTML=(col?'▸ ':'▾ ')+'Accounts'+(col&&S.accounts.length?` · ${money2(total)}`:'');
+  $('accounts').style.display=col?'none':'';
+  if(col) return;
+  $('accounts').innerHTML = S.accounts.length ? S.accounts.map((a,i)=>`
+    <div class="row" onclick="openModal('account','${a.id}')">
+      <div class="reorder">
+        <button onclick="event.stopPropagation();moveAccount('${a.id}',-1)" ${i===0?'style="opacity:.2" disabled':''}>▲</button>
+        <button onclick="event.stopPropagation();moveAccount('${a.id}',1)" ${i===S.accounts.length-1?'style="opacity:.2" disabled':''}>▼</button>
+      </div>
+      <div class="grow"><div class="name">${esc(a.name)}</div><div class="meta">Current balance</div></div>
+      <div class="amt ${(+a.balance)>=0?'pos':'neg'}">${money2(+a.balance)}</div>
+    </div>`).join('') : emptyMsg('No accounts yet.','account');
+}
+
+function billRow(b){
+  const n=daysUntil(b.due); let cls='mut',txt=fmtDate(b.due);
+  if(b.paid){cls='green';txt='Paid';} else if(n<0){cls='red';} else if(n<=7){cls='amber';}
+  return `<div class="row">
+    <button class="check ${b.paid?'done':''}" onclick="togglePaid('${b.id}')">✓</button>
+    <div class="grow" onclick="openModal('bill','${b.id}')">
+      <div class="name">${esc(b.name)}</div>
+      <div class="meta">${b.paid?'Paid this cycle':dueLabel(n)}${b.recurring?' · monthly':''}</div>
+    </div>
+    <div style="text-align:right"><div class="amt">${money2(+b.amount)}</div>
+      <span class="pill ${cls}" style="margin-top:4px;display:inline-block">${txt}</span></div>
+  </div>`;
+}
+function renderBills(){
+  const col=S.settings.collapsed.bills;
+  const total=periodOut(1)+periodOut(2);
+  $('billHead').innerHTML=(col?'▸ ':'▾ ')+'Bills'+(col&&S.bills.length?` · ${money2(total)}/mo`:'');
+  $('bills').style.display=col?'none':'';
+  if(col) return;
+  let html='';
+  [1,2].forEach(p=>{
+    const list=periodBills(p).sort((a,b)=>(a.paid-b.paid)||(new Date(a.due)-new Date(b.due)));
+    if(!list.length) return;
+    html+=`<div class="grouphead"><span>${p===1?'First':'Second'} Pay Period</span><span class="num">${money2(periodOut(p))}</span></div>`;
+    html+=list.map(billRow).join('');
+  });
+  $('bills').innerHTML = html || emptyMsg('No bills yet.','bill');
+}
+
+function renderSpending(){
+  const all=[...periodBills(1),...periodBills(2)];
+  const cats={}; all.forEach(b=>{const c=b.category||'Other'; cats[c]=(cats[c]||0)+(+b.amount||0);});
+  const entries=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const max=entries.length?Math.max(...entries.map(e=>e[1])):0;
+  $('spend').innerHTML = entries.length ? entries.map(([c,v])=>`
+    <div class="crow"><div class="clabel">${esc(c)}</div>
+      <div class="ctrack"><span style="width:${max?Math.round(v/max*100):0}%"></span></div>
+      <div class="cval">${money2(v)}</div></div>`).join('')
+    : '<div class="empty">Spending by category appears here once you add bills.</div>';
+}
+
+function toggleCollapse(key){ S.settings.collapsed[key]=!S.settings.collapsed[key]; render(); }
+function moveAccount(id,dir){
+  const i=S.accounts.findIndex(a=>a.id===id); if(i<0)return;
+  const j=i+dir; if(j<0||j>=S.accounts.length)return;
+  const [it]=S.accounts.splice(i,1); S.accounts.splice(j,0,it); render();
+}
+
+/* ---------- calendar ---------- */
+let calY, calM, calSel;
+(function(){const n=new Date(); calY=n.getFullYear(); calM=n.getMonth(); calSel=n.getDate();})();
+function calToday(){const n=new Date(); calY=n.getFullYear(); calM=n.getMonth(); calSel=n.getDate(); renderCalendar();}
+function calStep(dir){ calM+=dir; if(calM<0){calM=11;calY--;} if(calM>11){calM=0;calY++;} calSel=1; renderCalendar(); }
+function selDay(day){ calSel=day; renderCalendar(); }
+function billsForMonth(year,month){
+  const map={}; const last=new Date(year,month+1,0).getDate();
+  S.bills.forEach(b=>{ if(!b.due)return; const d=new Date(b.due+'T00:00:00');
+    if(b.recurring){ const day=Math.min(d.getDate(),last); (map[day]=map[day]||[]).push(b); }
+    else if(d.getFullYear()===year && d.getMonth()===month){ (map[d.getDate()]=map[d.getDate()]||[]).push(b); }
+  });
+  return map;
+}
+function renderCalendar(){
+  const now=new Date(), ty=now.getFullYear(), tm=now.getMonth(), td=now.getDate();
+  $('calTitle').textContent=new Date(calY,calM,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const first=new Date(calY,calM,1).getDay();
+  const days=new Date(calY,calM+1,0).getDate();
+  const map=billsForMonth(calY,calM); const pays=paysForMonth(calY,calM);
+  let g=['S','M','T','W','T','F','S'].map(d=>`<div class="cdow">${d}</div>`).join('');
+  for(let i=0;i<first;i++) g+='<div class="cell empty"></div>';
+  for(let day=1; day<=days; day++){
+    const isToday = calY===ty && calM===tm && day===td;
+    const isPay = !!pays[day];
+    const bs=map[day]||[]; let dot='';
+    if(bs.length){
+      const diff=Math.round((new Date(calY,calM,day)-new Date(ty,tm,td))/864e5);
+      const anyUnpaid=bs.some(b=>!b.paid);
+      const cls = !anyUnpaid?'green' : diff<0?'red' : diff<=7?'amber' : '';
+      dot=`<div class="cdot ${cls}"></div>`;
+    }
+    g+=`<div class="cell ${isToday?'today':''} ${isPay?'payday':''} ${day===calSel?'sel':''}" onclick="selDay(${day})"><span class="dn">${day}</span>${dot}</div>`;
+  }
+  $('calendar').innerHTML=`<div class="calwrap"><div class="cgrid">${g}</div>
+    <div class="cleg"><span><i style="background:var(--green)"></i>Today</span><span><i style="box-shadow:0 0 0 1.5px var(--purple) inset"></i>Payday</span><span><i style="background:var(--accent)"></i>Bill due</span></div></div>`;
+  renderCalDetail();
+}
+function renderCalDetail(){
+  const bs=billsForMonth(calY,calM)[calSel]||[];
+  const label=new Date(calY,calM,calSel).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  const payInfo=paysForMonth(calY,calM)[calSel];
+  let head=`<div class="grouphead"><span>${label}</span><span></span></div>`, body='';
+  if(payInfo){
+    const incs=S.income.filter(i=>+i.period===payInfo.p);
+    if(incs.length){ body+=incs.map(i=>`<div class="row"><div class="grow"><div class="name">💰 ${esc(i.name)}</div><div class="meta">Payday · ${payInfo.p===1?'first':'second'} period</div></div><div class="amt pos">${money2(+i.amount)}</div></div>`).join(''); }
+    else body+=`<div class="row"><div class="grow"><div class="name">💰 Payday</div><div class="meta">${payInfo.p===1?'First':'Second'} pay period</div></div></div>`;
+  }
+  if(bs.length){ const total=bs.reduce((s,b)=>s+(+b.amount||0),0);
+    head=`<div class="grouphead"><span>${label}</span><span class="num">${money2(total)} due</span></div>`;
+    body+=bs.map(b=>`<div class="row"><div class="grow"><div class="name">${esc(b.name)}</div><div class="meta">${esc(b.category||'Other')}${b.recurring?' · monthly':''}${b.paid?' · paid':''}</div></div><div class="amt">${money2(+b.amount)}</div></div>`).join('');
+  } else if(!payInfo){ $('calDetail').innerHTML=`<div class="empty" style="margin-top:10px">Nothing on ${label}.</div>`; return; }
+  $('calDetail').innerHTML=`<div style="margin-top:12px">${head}${body}</div>`;
+}
+
+/* ---------- actions ---------- */
+function togglePaid(id){
+  const b=S.bills.find(x=>x.id===id); if(!b)return;
+  if(!b.paid && b.recurring){ const d=new Date(b.due+'T00:00:00'); d.setMonth(d.getMonth()+1); b.due=d.toISOString().slice(0,10); b.paid=false; }
+  else { b.paid=!b.paid; }
+  render();
+}
+
+/* ---------- modal ---------- */
+let editing=null;
+function openModal(type,id){
+  editing={type,id};
+  const item = id ? listFor(type).find(x=>x.id===id) : null;
+  const today=new Date().toISOString().slice(0,10);
+  const defP = new Date().getDate()<15?1:2;
+  let f='';
+  if(type==='account'){
+    f=`<div class="field"><label>Account name</label><input id="f_name" value="${item?esc(item.name):''}" placeholder="Navy Federal, USAA…"></div>
+       <div class="field"><label>Current balance ($)</label><input id="f_balance" type="number" inputmode="decimal" value="${item?item.balance:''}" placeholder="0"></div>`;
+  } else if(type==='income'){
+    f=`<div class="field"><label>Income source</label><input id="f_name" value="${item?esc(item.name):''}" placeholder="Mid-month pay, End-month pay…"></div>
+       <div class="field"><label>Amount per paycheck ($)</label><input id="f_amount" type="number" inputmode="decimal" value="${item?item.amount:''}" placeholder="0"></div>
+       <div class="field"><label>Pay period</label><select id="f_period">
+         <option value="1" ${item&&(+item.period)===1?'selected':''}>First (mid-month)</option>
+         <option value="2" ${item&&(+item.period)===2?'selected':''}>Second (end-month)</option></select></div>
+       <div style="font-size:.74rem;color:var(--muted)">Paydays come from your NFCU 2026 calendar automatically.</div>`;
+  } else if(type==='bill'){
+    const cats=['Housing','Utilities','Insurance','Subscriptions','Car','Phone','Debt','Other'];
+    const bp = item?+item.payPeriod:defP;
+    f=`<div class="field"><label>Bill name</label><input id="f_name" value="${item?esc(item.name):''}" placeholder="Rent, Electric…"></div>
+       <div class="mrow"><div class="field"><label>Amount ($)</label><input id="f_amount" type="number" inputmode="decimal" value="${item?item.amount:''}" placeholder="0"></div>
+       <div class="field"><label>Due date</label><input id="f_due" type="date" value="${item?item.due:today}"></div></div>
+       <div class="mrow"><div class="field"><label>Category</label><select id="f_category">${cats.map(c=>`<option ${item&&item.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
+       <div class="field"><label>Paid by</label><select id="f_period"><option value="1" ${bp===1?'selected':''}>First paycheck</option><option value="2" ${bp===2?'selected':''}>Second paycheck</option></select></div></div>
+       <label class="chk"><input type="checkbox" id="f_recurring" ${(item?item.recurring:true)?'checked':''}> Repeats monthly</label>`;
+  }
+  $('modal').innerHTML=`<h3>${item?'Edit':'Add'} ${type}</h3>${f}
+    <div class="mbtns">
+      ${item?`<button class="btn del" onclick="del()">Delete</button>`:''}
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveItem()">Save</button>
+    </div>`;
+  $('ov').classList.add('show');
+}
+function closeModal(){$('ov').classList.remove('show'); editing=null;}
+$('ov').addEventListener('click',e=>{if(e.target.id==='ov')closeModal();});
+
+function saveItem(){
+  const {type,id}=editing; const v=k=>$('f_'+k)?$('f_'+k).value:'';
+  let obj;
+  if(type==='account') obj={name:v('name')||'Account', balance:+v('balance')||0};
+  else if(type==='income') obj={name:v('name')||'Income', amount:+v('amount')||0, period:+v('period')||1};
+  else obj={name:v('name')||'Bill', amount:+v('amount')||0, due:v('due'), category:v('category'), payPeriod:+v('period')||1, recurring:$('f_recurring').checked, paid:id?(S.bills.find(x=>x.id===id).paid):false};
+  const list=listFor(type);
+  if(id){Object.assign(list.find(x=>x.id===id),obj);} else {obj.id=uid(); list.push(obj);}
+  closeModal(); render();
+}
+function del(){const {type,id}=editing; const k=type==='income'?'income':type+'s'; S[k]=S[k].filter(x=>x.id!==id); closeModal(); render();}
+
+function openSettings(){
+  editing={type:'settings'};
+  $('modal').innerHTML=`<h3>Settings</h3>
+    <div class="field"><label>Transfer money FROM</label><input id="f_from" value="${esc(S.settings.transferFrom)}" placeholder="Navy Federal"></div>
+    <div class="field"><label>Transfer money TO</label><input id="f_to" value="${esc(S.settings.transferTo)}" placeholder="USAA"></div>
+    <div style="font-size:.76rem;color:var(--muted)">Used in the payday transfer reminder.</div>
+    <div class="mbtns"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveSettings()">Save</button></div>`;
+  $('ov').classList.add('show');
+}
+function saveSettings(){ S.settings.transferFrom=$('f_from').value||'Navy Federal'; S.settings.transferTo=$('f_to').value||'USAA'; closeModal(); render(); }
+
+/* ---------- data tools ---------- */
+function showTextModal(title,text,filename,mime){
+  editing={type:'text'}; window._dl={text,filename,mime};
+  $('modal').innerHTML=`<h3>${title}</h3>
+    <div class="field"><textarea id="f_export" readonly>${esc(text)}</textarea></div>
+    <div class="mbtns"><button class="btn ghost" onclick="closeModal()">Close</button>
+    <button class="btn ghost" onclick="dlText()">Download</button>
+    <button class="btn primary" onclick="copyText(this)">Copy</button></div>`;
+  $('ov').classList.add('show');
+  setTimeout(()=>{const t=$('f_export'); if(t){t.focus(); t.select();}},60);
+}
+function dlText(){ try{const {text,filename,mime}=window._dl; const b=new Blob([text],{type:mime}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{a.remove(); URL.revokeObjectURL(a.href);},100);}catch(e){alert('Download blocked in this preview — use Copy, or try on the hosted site.');} }
+function copyText(btn){ const t=$('f_export'); if(!t)return; t.focus(); t.select(); t.setSelectionRange(0,999999);
+  const done=()=>{const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1500);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t.value).then(done).catch(()=>{try{document.execCommand('copy');done();}catch(e){}}); } else { try{document.execCommand('copy'); done();}catch(e){} } }
+function exportData(){ showTextModal('Export / backup', JSON.stringify(S,null,2), 'cashflow-backup.json', 'application/json'); }
+function renderBackupNote(){
+  const lb=S.settings.lastBackup; let txt, stale;
+  if(!lb){ txt='Not backed up yet'; stale=true; }
+  else { const d=new Date(lb); const days=Math.round((todayMid()-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
+    if(days<=0){ txt='Backed up today'; stale=false; } else { txt='Last backup '+days+(days===1?' day':' days')+' ago'; stale=true; } }
+  $('backupWrap').innerHTML=`<div class="bnote ${stale?'stale':''}"><span>💾 ${txt}</span><button onclick="backupToObsidian()">Back up to Obsidian</button></div>`;
+}
+function markBackup(){ S.settings.lastBackup=new Date().toISOString(); save(); renderBackupNote(); }
+function backupMarkdown(){
+  const json=JSON.stringify(S,null,2);
+  const stamp=new Date().toLocaleString();
+  return `# Cash Flow backup\n\nLast updated: ${stamp}\n\n\`\`\`json\n${json}\n\`\`\`\n`;
+}
+async function backupToObsidian(){
+  const md=backupMarkdown(); const fname='cashflow-backup.md';
+  try{
+    const file=new File([md], fname, {type:'text/markdown'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:'Cash Flow backup'});
+      markBackup(); return;
+    }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  showTextModal('Back up data (Save to Files → your vault)', md, fname, 'text/markdown');
+}
+function openImport(){
+  editing={type:'import'};
+  $('modal').innerHTML=`<h3>Import data</h3>
+    <div class="field"><label>Paste JSON</label><textarea id="f_json" placeholder='{"accounts":[],"bills":[],"income":[]}'></textarea></div>
+    <div class="mbtns"><button class="btn ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn primary" onclick="doImport()">Import</button></div>`;
+  $('ov').classList.add('show');
+}
+function doImport(){
+  try{
+    const d=JSON.parse($('f_json').value);
+    S=migrate({accounts:(d.accounts||[]).map(normalize), bills:(d.bills||[]).map(normalize),
+      debts:(d.debts||[]).map(normalize), income:(d.income||[]).map(normalize), settings:d.settings||{}});
+    closeModal(); render();
+  }catch(e){alert('Couldn\'t read that — make sure it\'s valid JSON.');}
+}
+function normalize(o){if(!o.id)o.id=uid(); return o;}
+function wipe(){ if(confirm('Clear all data? This cannot be undone.')){S=migrate(blank()); render();} }
+
+/* ---------- payday calendar reminders (.ics) from the NFCU schedule ---------- */
+function pad(n){return String(n).padStart(2,'0');}
+function icsLocal(d,h,m){ return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(h)+pad(m)+'00'; }
+function buildPaydayICS(){
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CashFlow//EN','CALSCALE:GREGORIAN'];
+  const stamp=icsLocal(new Date(),0,0)+'Z';
+  upcomingPaydays().forEach((x,i)=>{
+    const pay=pdDate(x); const rem=new Date(pay); rem.setDate(rem.getDate()-1);
+    const amt=Math.round(periodOut(x.p));
+    lines.push('BEGIN:VEVENT','UID:cf-'+i+'-'+uid()+'@cashflow','DTSTAMP:'+stamp,
+      'DTSTART:'+icsLocal(rem,9,0),'DTEND:'+icsLocal(rem,9,30),
+      'SUMMARY:Transfer $'+amt+' to '+(S.settings.transferTo||'USAA')+' for bills',
+      'DESCRIPTION:'+(x.p===1?'First':'Second')+' pay period lands tomorrow. Move about $'+amt+' from '+(S.settings.transferFrom||'Navy Federal')+' to '+(S.settings.transferTo||'USAA')+'. Open the app for the exact amount.',
+      'BEGIN:VALARM','TRIGGER:PT0S','ACTION:DISPLAY','DESCRIPTION:Transfer reminder','END:VALARM','END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+function exportPaydayICS(){
+  if(!upcomingPaydays().length){ alert('No upcoming paydays left in the 2026 calendar.'); return; }
+  showTextModal('Payday reminders (.ics)', buildPaydayICS(), 'payday-reminders.ics', 'text/calendar');
+}
+
+/* ---------- example ---------- */
+function loadSample(){
+  S=migrate({
+    accounts:[{id:uid(),name:'Navy Federal Active Duty Checking',balance:1240},{id:uid(),name:'USAA Classic Checking',balance:380}],
+    income:[{id:uid(),name:'Mid-month pay',amount:2150,period:1},{id:uid(),name:'End-month pay',amount:2150,period:2}],
+    bills:[
+      {id:uid(),name:'Rent',amount:1450,due:'2026-07-01',category:'Housing',payPeriod:2,recurring:true,paid:false},
+      {id:uid(),name:'Car insurance',amount:142,due:'2026-06-05',category:'Insurance',payPeriod:1,recurring:true,paid:false},
+      {id:uid(),name:'Phone',amount:74,due:'2026-06-08',category:'Phone',payPeriod:1,recurring:true,paid:false},
+      {id:uid(),name:'Electric',amount:118,due:'2026-06-12',category:'Utilities',payPeriod:1,recurring:true,paid:false},
+      {id:uid(),name:'Car payment',amount:389,due:'2026-06-15',category:'Car',payPeriod:2,recurring:true,paid:false},
+      {id:uid(),name:'Streaming',amount:46,due:'2026-06-20',category:'Subscriptions',payPeriod:2,recurring:true,paid:false},
+      {id:uid(),name:'Gym',amount:30,due:'2026-06-22',category:'Other',payPeriod:2,recurring:true,paid:false}
+    ],
+    debts:[], settings:{transferFrom:'Navy Federal',transferTo:'USAA'}
+  });
+  render();
+}
+
+/* ---------- home-screen icon ---------- */
+(function(){
+  const c=document.createElement('canvas'); c.width=c.height=180; const x=c.getContext('2d');
+  x.fillStyle='#15181d'; x.fillRect(0,0,180,180);
+  x.fillStyle='#34d399'; [[44,108,22,28],[78,84,22,52],[112,60,22,76]].forEach(b=>x.fillRect(b[0],b[1],b[2],b[3]));
+  try{$('appleIcon').href=c.toDataURL('image/png');}catch(e){}
+})();
+
+render();
+</script>
